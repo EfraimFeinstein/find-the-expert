@@ -2,6 +2,10 @@
 '''
 Convert Stack Overflow dumps to MySQL
 
+Stack Overflow dumps come as massive XML documents. They are processed into the SQL database using Python's SAX
+interface 5000 (adjustable) records at a time. Each data type is wrangled into a different table using a subclass of 
+BufferedContentHandler (which acts like an abstract class).
+
 Created on Aug 8, 2012
 
 @author: efeins
@@ -606,8 +610,8 @@ def destroyDatabase(db):
     c.fetchall()
     c.close()
 
-""" convert an ISO time into what MySQL expects """
 def importTime(oldTime):
+    """ convert an ISO time into what MySQL expects """
     if oldTime:
         try:
             timeTuple = datetime.datetime.strptime(oldTime, "%Y-%m-%dT%H:%M:%S.%f")
