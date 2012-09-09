@@ -6,11 +6,12 @@ This module sets up the classification system (the semantic index)
 Call it by 
 topic_classification [tags]
 
+The corpus name and number of posts per topic are set in config.py
+
 The corpus_name is your choice. I use something like stackoverflow_xml for the stackoverflow database and xml tag.
 tags are the tags to include (Note: the more you include, the more memory you need for the matrix!). If it is not given,
 only the top tags are included, but note that the top ten tags are 50% of the posts.
 
-The number of posts per topic is set in config.py
 
 """
 import sys
@@ -29,6 +30,7 @@ from BeautifulSoup import BeautifulSoup
 from config import Config
 import util
 
+# tokenizers....
 linkstops = [u"http", u"com", u"org", u"www", u":", u"://", u"/", u"."]
 punctuators = [".", ",", "-", "/", "&", "\\", "'", '"', ":", ";", "(", ")", "?", "*", "!", "$", "%", "#", "|", "{", "}", "[", "]", "://", "...", "<", ">"]
 punctuatorSet = set(punctuators)
@@ -41,9 +43,11 @@ def tokenizeText(postText, useStemmer=False):
     text = nltk.wordpunct_tokenize(postText)
     words = [w.lower() if not useStemmer else stemmer(w.lower()) for w in text if w.lower() not in stopwords]
     nText = nltk.Text(words)
-    return nText.tokens #+ [(bigram[0]+" "+bigram[1]) for bigram in nltk.bigrams(nText)]
+    return nText.tokens
 
 def tokenizePost(title, question, answers, tags):
+    """ tokenize a post, separating text and code """
+    # note: a better way to do this would be separating out code and text completely and indexing them separately
     textTokens = []
     codeTokens = []
     linkTokens = []
@@ -69,7 +73,11 @@ def tokenizePost(title, question, answers, tags):
     return (textTokens + codeTokens + linkTokens + tagTokens[1:-1])
 
 class StackOverflowCorpus(object):
-    """ corpus for gensim """
+    """ abstract corpus for gensim 
+    A corpus is a set of documents containing a numerical word list and a dictionary
+    linking the numbers to words.
+    This class also keeps track of the mapping between corpus "documents" and post ids.
+    """
     def __init__(self, db, dictionary, topic=None, postList=None):
         self.t0 = time.time()
         self.tbegin = time.time()
@@ -190,11 +198,11 @@ def makeLSI(fileName, nTopics, fromTfidf=False):
     """ make LSI given a corpus filename """
     corpus = gensim.corpora.MmCorpus(fileName + ".mm")
     if fromTfidf:
-      print >>sys.stderr, "Converting corpus to TFIDF representation"
-      tfidf = gensim.models.TfidfModel.load(fileName + ".tfidf")
-      useCorpus = tfidf[corpus]
+        print >>sys.stderr, "Converting corpus to TFIDF representation"
+        tfidf = gensim.models.TfidfModel.load(fileName + ".tfidf")
+        useCorpus = tfidf[corpus]
     else:
-      useCorpus = corpus
+        useCorpus = corpus
     dictionary = gensim.corpora.Dictionary.load(fileName + ".dict")
     lsi = gensim.models.LsiModel(useCorpus, id2word=dictionary, num_topics=nTopics)
     lsi.save(fileName + ".lsi")
@@ -204,11 +212,11 @@ def makeLDA(fileName, nTopics, fromTfidf=False):
     """ make LDA given a corpus filename """
     corpus = gensim.corpora.MmCorpus(fileName + ".mm")
     if fromTfidf:
-      print >>sys.stderr, "Converting corpus to TFIDF representation"
-      tfidf = gensim.models.TfidfModel.load(fileName + ".tfidf")
-      useCorpus = tfidf[corpus]
+        print >>sys.stderr, "Converting corpus to TFIDF representation"
+        tfidf = gensim.models.TfidfModel.load(fileName + ".tfidf")
+        useCorpus = tfidf[corpus]
     else:
-      useCorpus = corpus
+        useCorpus = corpus
     dictionary = gensim.corpora.Dictionary.load(fileName + ".dict")
     lda = gensim.models.LdaModel(useCorpus, id2word=dictionary, num_topics=nTopics)
     lda.save(fileName + ".lda")
@@ -225,32 +233,15 @@ def ldaTopics(fileName, query):
 def makeSimilarityIndex(fileName, fromTfIdf=False):
     corpus = gensim.corpora.MmCorpus(fileName + ".mm")
     if fromTfIdf:
-      print >>sys.stderr, "Converting corpus to TFIDF representation"
-      tfidf = gensim.models.TfidfModel.load(fileName + ".tfidf")
-      useCorpus = tfidf[corpus]
+        print >>sys.stderr, "Converting corpus to TFIDF representation"
+        tfidf = gensim.models.TfidfModel.load(fileName + ".tfidf")
+        useCorpus = tfidf[corpus]
     else:
-      useCorpus = corpus
+        useCorpus = corpus
     lsi = gensim.models.LsiModel.load(fileName + ".lsi")
     index = gensim.similarities.Similarity(fileName, lsi[useCorpus], len(lsi.show_topics()))
     index.save(fileName + ".index")
     return index
-
-def similarityQuery(fileName, query):
-    """ perform a similarity query. return matching post ids, similarity score, and corpus id """
-    index = gensim.similarities.Similarity.load(fileName + ".index")
-    lsi = gensim.models.LsiModel.load(fileName + ".lsi")
-    corpus = gensim.corpora.MmCorpus(fileName + ".mm")
-    dictionary = gensim.corpora.Dictionary.load(fileName + ".dict")
-    queryBow = dictionary.doc2bow(tokenizeText(query, useStemmer=True))
-    queryLsi = lsi[queryBow]
-    results = index[queryLsi]
-    corpusToPost = StackOverflowCorpus.loadCorpusToPost(fileName + ".c2p")
-   
-    matchingPosts = [] 
-    for corpusDoc, similarity in sorted(enumerate(results), key=lambda item: -item[1]):
-        postId = corpusToPost[corpusDoc]
-        matchingPosts.append((postId, similarity, corpusDoc))
-    return matchingPosts
 
 def displayMatches(db, matches, start=0, maxresults=5):
     for match in matches[start:(start+maxresults)]:
@@ -261,17 +252,17 @@ def displayMatches(db, matches, start=0, maxresults=5):
 class QueryResult:
     def __init__(self, db, match, post=None):
         """ convert a similiarityQuery match or post to a QueryResult structure; if post is given, match should be the similarity """
-	if post:
-	    self.id = post.id
-	    self.post = post
-	    self.similarity = match
-	else:
-	    self.id = int(match[0])
-	    self.post = util.Post.fromPostId(db, self.id)
-	    self.similarity = match[1]
+        if post:
+            self.id = post.id
+            self.post = post
+            self.similarity = match
+        else:
+            self.id = int(match[0])
+            self.post = util.Post.fromPostId(db, self.id)
+            self.similarity = match[1]
 
 class TopicModeling(object):
-    """ class to keep references to all the parts of the topic model in memory"""
+    """ class to keep references to all the parts of the topic model (aka index) in memory"""
     def __init__(self, corpusName):
         self.corpusName = corpusName
         self.index = gensim.similarities.Similarity.load(corpusName + ".index")
@@ -310,7 +301,6 @@ class TopicModeling(object):
                 docLsi = self.topicModel.lsi[self.topicModel.tfidf[docBow]]
                 docIndex = gensim.similarities.MatrixSimilarity([docLsi])
                 similarity = docIndex[self.queryLsi]
-		#logging.debug("similarity of query to [" + document + "]=%0.3f" % similarity[0])
                 return similarity[0]
             else:
                 print >>sys.stderr, "WARNING: Document did not bow:", document
@@ -333,14 +323,15 @@ class TopicModeling(object):
         """ return query results as a list of QueryResult instances
         """
         matchingPosts = self.similarityQuery(query, cutoff);
-	# link id->similarity
-	postMatches = {match[0] : match[1] for match in matchingPosts}
-	# get the actual posts, but remove the closed ones
-	posts = util.Post.fromPostIds(db, postMatches, removeClosed=True)
-	logging.debug("returning %d open posts" % len(posts))
-	return [QueryResult(db, postMatches[post.id], post=post) for post in posts]
+        # link id->similarity
+        postMatches = {match[0] : match[1] for match in matchingPosts}
+        # get the actual posts, but remove the closed ones
+        posts = util.Post.fromPostIds(db, postMatches, removeClosed=True)
+        logging.debug("returning %d open posts" % len(posts))
+        return [QueryResult(db, postMatches[post.id], post=post) for post in posts]
 
 def main():
+    """ generate a dictionary, corpus and index from the Stack Overflow dump """
     corpusName = Config.corpusName
     print >>sys.stderr, "Generating corpus..."
     if os.path.isfile(corpusName + ".mm"):
