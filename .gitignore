@@ -1,0 +1,29 @@
+config.py
+*~
+*.bkp
+*.bak
+*.pyc
+*.swp
+
+# program generated files
+*.npy
+*.0
+*.1
+*.dict
+*.index
+*.lsi
+*.lda
+*.mm
+*.tfidf
+*.c2p
+
+# OS generated files 
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
+

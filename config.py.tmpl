@@ -1,0 +1,42 @@
+'''
+This is the main configuration file. You must copy it to config.py before running anything.
+
+Created on Aug 14, 2012
+
+@author: efeins
+'''
+import re
+
+class Config(object):
+    # use debugging printouts?
+    debug = False   
+    
+    # This is your MySQL database information
+    mySQLhost = "HOSTNAME"
+    mySQLuser = "USERNAME"
+    mySQLpasswd = "PASSWORD"
+    mySQLdb = "DBNAME"
+    
+    # the corpus name for the LSI index files
+    # A convenient nomenclature is databasename_tags_postsPerTopic
+    corpusName = "CORPUSNAME"
+   
+    # This is where you keep the *unzipped* stackoverflow dump
+    sourceDirectory = "/path/to/stackoverflow/dump"
+ 
+    # how many posts per topic: making it bigger makes there be fewer topics and more spurious similarity.
+    # making it smaller makes more topics and more fine-grained relevance, but also consumes more memory
+    # For the demo, 250 is used, but if you use more than ~50,000 posts, it will kill an 8GB RAM machine very quickly
+    postsPerTopic = 1000
+
+    # answer at this host. Use 127.0.0.1 for localhost only, 0.0.0.0 for all hosts
+    host = "0.0.0.0"
+
+    # run the server on this TCP port
+    port = 5000
+
+    # these are used internally. It's safe to leave them alone.
+    linkExtractionRE = re.compile("<a.+href=['\"]([^'\"]+)['\"]")
+    codeOrTagsRE = re.compile("<code>(.+)</code>|<[^>]+>")
+    codeExtractionRE = re.compile("\\<code\\>|\\</code\\>|[/\<\>+\-*()=;\"\'~|!{}&#%^\d,]")
+
