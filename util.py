@@ -13,6 +13,7 @@ from config import Config
 from nltk.tokenize import WordPunctTokenizer
 
 class Post:
+    """ class to represent a Stack Overflow post record"""
     def __init__(self, post):
         """ turn a tuple from SELECT * into a structured post """
         self.id = int(post[0])
@@ -94,6 +95,7 @@ class Post:
         return posts if n > 0 else None
 
 def makeDbConnection(database=Config.mySQLdb):
+    """ make a database connection with defaults """
     db= MySQLdb.connect(
                          host=Config.mySQLhost,
                          user=Config.mySQLuser,
@@ -185,6 +187,9 @@ if __name__ == '__main__':
     pass
 
 def iterateQuestions(db, onTopic=None, postList=None, selectRate=5000):
+    """ iterate through the given questions from the database, either by tag or by a list of posts. Select 
+    selectRate at a time to avoid one-by-one database acccess
+    """
     c=db.cursor()
     
     nResults = selectRate
@@ -226,6 +231,7 @@ def iterateAnswers(db, postIds):
     c.close()
 
 class Comment:
+    """ represent a database comment as a class """
     def __init__(self, commentTuple):
         self.id = commentTuple[0]
         self.post_id = commentTuple[1]
@@ -235,7 +241,7 @@ class Comment:
         self.user_id = commentTuple[5]
 
 def iterateComments(db, post_id):
-    """ return the answers for a given post """
+    """ return the comments for a given post """
     c=db.cursor()
     c.execute("""SELECT * FROM comments WHERE post_id=%d""" % post_id)
     for comment in c.fetchall():
@@ -267,6 +273,7 @@ def iterateAllComments(db, commentList=None, selectRate=5000):
     c.close()
 
 def usersById(db, userIds):
+    """ get user display names by id """
     c = db.cursor()
     idOrder = ",".join([str(userId) for userId in userIds])
     c.execute("""

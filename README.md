@@ -19,6 +19,7 @@ To run:
  1. Edit config.py in your favorite text editor. Put in your MySQL database and login information.
  1. Import the stack overflow dump into the database by running sov2mysql.py. It will take some time.
  1. Run the indexing application to index the set of tags that you want indexed: topic\_classification.py tags; Note that indexing more tags takes more memory. My 8 GB RAM machine could not handle more than 100,000 posts effectively. Index creation can be distributed if more machines are available, but one machine will require a lot of memory to hold the full matrix. Alternatively, the number of topics may be reduced or (ideally) stopwords may be chosen more carefully to reduce the number of features. 
+ 1. Run scoring.py (to create the precalculated scoring tables)
  1. Run comment\_classification.py (which uses the trained classifier in comment.classifier)
  1. Run controller.py: a server should run at http://localhost:5000 (unless you changed the port in config.py).  
 

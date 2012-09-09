@@ -169,6 +169,8 @@ def scoreUsers(db, query, queryResults, topicModel, cutoffPercentile=75, resultC
     commentSentiment = array([commentSentimentDict.get(ident, 0) for ident in ids])
     logging.debug("got sentiment...calculating scores...")
     scores += commentSentiment * sentimentFactor
+    
+    # calculate the scores of the posts for this query using a scoring heuristic
     postIds = array(postIds)
     relevance = array(relevance)
     accepted = array(accepted)
@@ -193,3 +195,11 @@ def scoreUsers(db, query, queryResults, topicModel, cutoffPercentile=75, resultC
     logging.debug("sorting users by score...")
     return sorted(filter(lambda us: us.percentileRank >= cutoffPercentile, userScores), key=lambda u: -u.score)
 
+def main():
+    """ create precalculated scoring table """
+    db = util.makeDbConnection()
+    createPrescoringTables(db)
+    db.close()
+
+if __name__ == "__main__":
+    main()
