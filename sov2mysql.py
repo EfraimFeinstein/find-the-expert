@@ -742,8 +742,7 @@ def tagAnswers(db):
           t.tag AS tag,
           a.id AS post_id
     FROM
-        tags AS t INNER JOIN posts AS q ON t.post_id=q.id
-                  INNER JOIN posts AS a ON q.id=a.parent_id
+        tags AS t INNER JOIN posts AS a ON t.post_id=a.parent_id
     WHERE
         a.type_id=2;
     """)
