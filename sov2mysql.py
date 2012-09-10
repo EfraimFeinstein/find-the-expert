@@ -777,9 +777,10 @@ def importData(db, directory):
     importUsersTable(db, directory)          
     importPostsTable(db, directory)           
     importCommentsTable(db, directory)      
-    importBadgesTable(db, directory)       
-    importVotesTable(db, directory)       
-    importPostsHistoryTable(db, directory)
+    # These tables are unused:
+    #importBadgesTable(db, directory)       
+    #importVotesTable(db, directory)       
+    #importPostsHistoryTable(db, directory)
     tagAnswers(db)
     linkQuestionsToAnswers(db)
         
